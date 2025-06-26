@@ -1191,11 +1191,17 @@ class PostsStatsService {
                     'p.title',
                     'p.published_at',
                     'p.feature_image',
+                    'p.status',
                     'emails.email_count',
-                    'emails.opened_count'
+                    'emails.opened_count',
+                    this.knex.raw('GROUP_CONCAT(u.name ORDER BY pa.sort_order SEPARATOR ", ") as authors'),
+                    this.knex.raw('GROUP_CONCAT(u.slug ORDER BY pa.sort_order SEPARATOR ", ") as author_slugs')
                 )
                 .leftJoin('emails', 'emails.post_id', 'p.id')
-                .whereIn('p.uuid', postUuids);
+                .leftJoin('posts_authors as pa', 'pa.post_id', 'p.id')
+                .leftJoin('users as u', 'u.id', 'pa.author_id')
+                .whereIn('p.uuid', postUuids)
+                .groupBy('p.id', 'p.uuid', 'p.title', 'p.published_at', 'p.feature_image', 'p.status', 'emails.email_count', 'emails.opened_count');
 
             // Get member attribution counts for these posts (model after GrowthStats logic)
             const memberAttributionCounts = await this._getMemberAttributionCounts(posts.map(p => p.post_id), options);
@@ -1217,6 +1223,9 @@ class PostsStatsService {
                     title: post.title,
                     published_at: post.published_at,
                     feature_image: post.feature_image ? urlUtils.transformReadyToAbsolute(post.feature_image) : post.feature_image,
+                    status: post.status,
+                    authors: post.authors || '',
+                    author_slugs: post.author_slugs || '',
                     views: row.visits,
                     open_rate: post.email_count > 0 ? (post.opened_count / post.email_count) * 100 : null,
                     members: memberCount
@@ -1240,14 +1249,20 @@ class PostsStatsService {
                         'p.title',
                         'p.published_at',
                         'p.feature_image',
+                        'p.status',
                         'emails.email_count',
-                        'emails.opened_count'
+                        'emails.opened_count',
+                        this.knex.raw('GROUP_CONCAT(u.name ORDER BY pa.sort_order SEPARATOR ", ") as authors'),
+                        this.knex.raw('GROUP_CONCAT(u.slug ORDER BY pa.sort_order SEPARATOR ", ") as author_slugs')
                     )
                     .leftJoin('emails', 'emails.post_id', 'p.id')
+                    .leftJoin('posts_authors as pa', 'pa.post_id', 'p.id')
+                    .leftJoin('users as u', 'u.id', 'pa.author_id')
                     .whereNotIn('p.uuid', postUuids)
                     .whereNotIn('p.id', existingPostIds)
                     .where('p.status', 'published')
                     .whereNotNull('p.published_at')
+                    .groupBy('p.id', 'p.uuid', 'p.title', 'p.published_at', 'p.feature_image', 'p.status', 'emails.email_count', 'emails.opened_count')
                     .orderBy('p.published_at', 'desc')
                     .limit(remainingCount);
 
@@ -1268,6 +1283,9 @@ class PostsStatsService {
                     title: post.title,
                     published_at: post.published_at,
                     feature_image: post.feature_image ? urlUtils.transformReadyToAbsolute(post.feature_image) : post.feature_image,
+                    status: post.status,
+                    authors: post.authors || '',
+                    author_slugs: post.author_slugs || '',
                     views: 0,
                     open_rate: post.email_count > 0 ? (post.opened_count / post.email_count) * 100 : null,
                     members: memberCount

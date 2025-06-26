@@ -6,6 +6,24 @@ import {getPeriodText} from '@src/utils/chart-helpers';
 import {useAppContext, useNavigate} from '@tryghost/admin-x-framework';
 import {useGlobalData} from '@src/providers/GlobalDataProvider';
 
+// Utility function to generate post status text
+const getPostStatusText = (post: TopPostViewsStats) => {
+    const hasEmail = post.open_rate !== null;
+    
+    if (post.status === 'sent') {
+        return 'Email only';
+    }
+    
+    if (post.status === 'published') {
+        if (hasEmail) {
+            return 'Published and sent';
+        }
+        return 'Published';
+    }
+    
+    return post.status;
+};
+
 interface TopPostsData {
     stats?: TopPostViewsStats[];
 }
@@ -90,9 +108,14 @@ const TopPosts: React.FC<TopPostsProps> = ({
                                                     :
                                                     <FeatureImagePlaceholder className='hidden aspect-[16/10] w-24 shrink-0 sm:!visible sm:!flex' />
                                                 }
-                                                <div className='flex flex-col'>
+                                                <div className='flex flex-col gap-1'>
                                                     <span className='text-base font-semibold leading-[1.35em]'>{post.title}</span>
-                                                    <span className='text-sm text-muted-foreground'>{formatDisplayDate(post.published_at)}</span>
+                                                    <span className='text-sm text-muted-foreground'>
+                                                        By {post.authors} • {formatDisplayDate(post.published_at)}
+                                                    </span>
+                                                    <span className='text-sm text-muted-foreground'>
+                                                        {getPostStatusText(post)}
+                                                    </span>
                                                 </div>
                                             </div>
                                         </TableCell>

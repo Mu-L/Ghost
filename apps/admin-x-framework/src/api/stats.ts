@@ -148,6 +148,9 @@ export type TopPostViewsStats = {
     title: string;
     published_at: string;
     feature_image: string;
+    status: string;
+    authors: string;
+    author_slugs: string;
     views: number;
     open_rate: number | null;
     members: number;
